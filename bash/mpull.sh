@@ -1,5 +1,6 @@
 #!/bin/zsh
 main="/Users/ne0crank/git"
+npm i -g npm
 for h in `ls $main`; do
   cd ${main}/${h}
   echo
