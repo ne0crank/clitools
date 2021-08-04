@@ -1,0 +1,27 @@
+{
+  "name": "ntpcheck",
+  "version": "1.0.0",
+  "description": "validates current time with list of ntp servers",
+  "main": "bin/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli"
+  ],
+  "bin": {
+    "ntpcheck": "./bin/index.js"
+  },
+  "author": "ne0crank",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "yargs": "^17.0.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "babel-register": "^6.26.0"
+  }
+}
