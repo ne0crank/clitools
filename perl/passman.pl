@@ -156,6 +156,7 @@ sub ask_missing {
       $accept = $accept || '';
     }
     ReadMode(0);
+    exit 0 if ( $accept and $accept =~ /exit|quit/i );
     return $accept;
 }
 

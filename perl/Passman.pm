@@ -35,7 +35,7 @@ If you have a web site set up for your module, mention it here.
 
 =head1 AUTHOR
 
-Patrick Piper
+Kent schaeffer
 
 =head1 MAINTENANCE
 
@@ -44,10 +44,10 @@ kent.schaeffer@five9.com
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2013 by Patrick Piper
+Copyright (C) 2022 Kent Schaeffer, ne0crank
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.16.2 or,
+it under the same terms as Perl itself, either Perl version 5.34.0 or,
 at your option, any later version of Perl 5 you may have available.
 
 =cut
@@ -59,19 +59,33 @@ use warnings;
 use IO::All;
 use JSON::XS ();
 use MIME::Base64;
-use Crypt::CBC;
-use Crypt::Cipher::AES;
+use Crypt::Argon2 qw( argon2id_pass argon2id_verify );
+use Crypt::URandom qw( urandom );
 use Term::ReadKey;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
-my $user;
-my $passman_file = '/opt/five9/scripts/f9pcr/modules/F9PCR/Config/.passman';
-my $cryptkey     = 'humptydumptysatonawallandhadagreatfallandthequeendidnothelpatall';
-my $ivector      = '0123456789123456';
+# my $user;
+# my $passman_file = '/opt/five9/scripts/f9pcr/modules/F9PCR/Config/.passman';
+# my $cryptkey     = 'humptydumptysatonawallandhadagreatfallandthequeendidnothelpatall';
+# my $ivector      = '0123456789123456';
+
+my $helper = {
+	salt => urandom(16),
+	cost => 4,
+	fact => '128M',
+	para => 4,
+	tags => 32,
+	file => '~/.passman'
+};
 
 sub new {
 	my $class = shift;
+	my $self = {
+		_passfile => shift,
+		_application => shift,
+		_username => shift,
+	};
 	return bless {}, $class;
 }
 
@@ -96,67 +110,15 @@ sub _writeall {
 	$x > io($passman_file);
 }
 
-sub _get_user {
-    my ( $self, $xuser, $xenvi ) = @_;
-    $xuser = ( $xuser ) ? $xuser : $user->{uix};
-    $xenvi = ( $xenvi ) ? $xenvi : 'ddi';
-    my $accept = '';
-    while ( not $accept ) {
-        my $user_prompt = $self->_prompt_user( "\nEnter $xuser ID for $xenvi", "$user->{uix}", "text" );
-        $accept = ( $user_prompt ) ? $user_prompt : $user->{uix};
-    }
-	exit 0 if ( $accept and $accept =~ /exit|quit/i );
-    return $accept;
+
+sub _encrypt {
+	my ( $self, $pwd ) = @_;
+  my $encoded = &argon2id_pass( $pwd, $helper->{salt}, $helper->{cost},
+	    $helper->{fact}, $helper->{para}, $helper->{tags} );
+	return $encoded || $pwd;
 }
 
-# function TO PROMPT FOR PASSWORD
-sub _get_pass {
-    my ( $self, $xuser, $xenvi, $cause ) = @_;
-    $xenvi = ( $xenvi ) ? $xenvi : 'ddi';
-    my $accept = '';
-    while ( not $accept ) {
-        my $user_prompt = $self->_prompt_user( "\n$cause $xuser passcode for $xenvi", "", "pass" );
-        $accept = ( $user_prompt ) ? $user_prompt : '';
-    }
-	exit 0 if ( $accept and $accept =~ /exit|quit/i );
-    return $accept;
-}
-
-
-# function TO PROMPT FOR SOME INFO
-sub _prompt_user {
-    my ( $prompt, $default, $type ) = @_;
-    my $defaultValue = $default ? "[$default]" : "";
-
-    my $quest = '';
-    if ( not $type or $type and $type =~ /^text$/i ) {
-        print "$prompt $defaultValue: ";
-        chomp( $quest = <STDIN> );
-    } elsif ( $type and $type =~ /^pass$/i ) {
-        print "$prompt $defaultValue: ";
-        ReadMode('noecho');
-        chomp( $quest = <STDIN> );
-        ReadMode(0);
-    }
-    exit 0 if ( $quest and $quest =~ /exit|quit/i );
-    return $quest ? $quest : $default;
-}
-
-sub encrypt {
-	my ( $self, $s ) = @_;
-
-	my $cipher = Crypt::CBC->new(
-		-key         => $cryptkey,
-		-cipher      => 'Cipher::AES',
-		-iv          => $ivector,
-		-literal_key => 1,
-		-header      => "none",
-		-keysize     => 32
-	);
-	return MIME::Base64::encode_base64( $cipher->encrypt($s) );
-}
-
-sub decrypt {
+sub _decrypt {
 	my ( $self, $s ) = @_;
 
 	my $cipher = Crypt::CBC->new(
@@ -201,7 +163,7 @@ sub getpass {
 	my ( $self, $app, $userid ) = @_;
 
 	my $data = $self->_readall;
-	return $self->decrypt( $data->{ $app . '/' . $userid } );
+	return $self->_decrypt( $data->{ $app . '/' . $userid } );
 }
 
 1;
