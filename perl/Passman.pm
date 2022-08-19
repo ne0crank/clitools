@@ -67,7 +67,7 @@ our $VERSION = '0.02';
 
 my $user;
 my $passman_file = '/opt/five9/scripts/f9pcr/modules/F9PCR/Config/.passman';
-my $cryptkey     = 'humptydumptysatonawallreadytofal';
+my $cryptkey     = 'humptydumptysatonawallandhadagreatfallandthequeendidnothelpatall';
 my $ivector      = '0123456789123456';
 
 sub new {
@@ -165,7 +165,7 @@ sub decrypt {
 		-iv          => $ivector,
 		-literal_key => 1,
 		-header      => "none",
-		-keysize     => 32
+		-keysize     => 64
 	);
 	return $cipher->decrypt( MIME::Base64::decode_base64($s) );
 }
