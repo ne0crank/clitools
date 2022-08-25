@@ -42,7 +42,7 @@ at your option, any later version of Perl 5 you may have available.
 use strict;
 use warnings;
 use Getopt::Long;
-Getopt::Long::Configure( "bundling" );
+Getopt::Long::Configure( "bundling", "ignorecase_always" );
 
 use Data::Dump qw( dump );
 use Cwd qw( abs_path );
@@ -61,16 +61,13 @@ use Passman;
 
 
 use vars qw {
- $meta $keys $path
+ $opts $meta $keys $path
 };
 
 our $VERSION = '0.01';
 
 $path = &abs_path($0);
 $meta = {
-  debug => 0,
-  help => 0,
-  version => 0,
   acts => [ 'get', 'add', 'mod', 'del' ],
   full => $path,
   dir => &dirname($path),
@@ -78,68 +75,126 @@ $meta = {
   mssg => {
     help => 'You requested this help screen',
     error => 'General Error, but I cannot figure out what happened',
-    missing => ' is missing - please enter now',
     nodata => 'No data found for ',
     newdata => 'Please enter new ',
     success => 'Successful attempt to ',
-    failure => 'Failed attempt to '
+    failure => 'Failed attempt to ',
+    exist => 'Password already exists for ',
+    differ => 'Password differs for ',
+    nopass => 'No password found for ',
+    addnow => 'do you want to add it now? (y|n) '
   }
 };
 
-
+$opts = {};
 GetOptions(
-  'debug|d'    => \$meta->{debug},   ## show debug output
-  'app|a=s'    => \$keys->{appl},
-  'user|u=s'   => \$keys->{user},
-  'pass|p=s'   => \$keys->{pass},
-  'action|c=s' => \$keys->{acts},  ## action = add, del, mod, get (default)
-  'file|f=s'   => \$keys->{file},
-  'version|v'  => \$meta->{version},
-  'help|h'     => \$meta->{help},
-  'usage|g'    => \$meta->{help},
+  $opts,
+  'version|v'     => \$opts->{version},
+  'help|usage|h'  => \$opts->{help},
+  'quiet|q'       => \&set_quiet,
+  'verbose|b'     => \$opts->{verbose},
+  'debug|d'       => \$opts->{debug},   ## show debug output
+  'app|a=s'       => \$keys->{appl},
+  'user|u=s'      => \$keys->{user},
+  'pass|p=s'      => \$keys->{pass},
+  'action|c=s'    => \$keys->{acts},  ## action = add, del, mod, get (default)
+  'file|f=s'      => \$keys->{file},
 );
 
-&usage( $meta->{errs}{help} ) if ( $meta->{help} or $meta->{usage} );
-if ( $meta->{version} ) {
+&usage( 'No options provided' ) if (
+  not $opts->{version} and not $opts->{help} and not $opts->{quiet}
+  and not $opts->{verbose} and not $opts->{debug}
+  and not $keys->{appl} and not $keys->{user} and not $keys->{pass}
+  and not $keys->{acts} and not $keys->{file} );
+
+&usage( $meta->{mssg}{help} ) if ( $opts->{help} );
+
+if ( $opts->{version} ) {
   print $meta->{runs} . ' version ' . $VERSION . "\n";
   exit 0;
 }
 
-$keys->{acts} = ( defined($keys->{acts}) and any { lc $keys->{acts} } @{ $meta->{acts} } )
+$keys->{acts} = ( $keys->{acts} and any { lc $keys->{acts} } @{ $meta->{acts} } )
   ? lc $keys->{acts} : $meta->{acts}[0];
-$keys->{appl} = $keys->{appl} || '';
-$keys->{user} = $keys->{user} || '';
-$keys->{pass} = $keys->{pass} || '';
-$keys->{file} = $keys->{file} || '';
 
-dump $keys, $meta if ( $meta->{debug} );
+$keys->{object} = Passman->new();
+$keys->{appl} = $keys->{appl} || &ask_missing( 'app', $meta->{mssg}{newdata} );
+$keys->{user} = $keys->{user} || &ask_missing( 'user', $meta->{mssg}{newdata} );
+$keys->{pass} = $keys->{pass} || undef;
+$keys->{file} = ( $keys->{file} and -e $keys->{file} ) ? $keys->{file} : undef;
 
-if ( $keys->{acts} eq 'get' ) {
-  $keys->{object} = new Passman;
-  $keys->{appl} = $keys->{appl} || &ask_missing( 'app', $meta->{mssg}{missing} );
-  $keys->{user} = $keys->{user} || &ask_missing( 'user', $meta->{mssg}{missing} );
-  $keys->{pass} = $keys->{object}->getpass( $keys->{appl}, $keys->{user} );
-  $keys->{return} = ( length( $keys->{pass} ) > 0 ) ? $meta->{mssg}{success} : $meta->{mssg}{failure};
-  printf "%s find this object\nApp: %s\nUser: %s\nPass: %s\n",
+dump $keys, $meta, $opts if ( $opts->{debug} );
+
+if ( $keys->{acts} eq 'del' ) {
+  $keys->{return} = $keys->{object}->delPassword( $keys->{appl}, $keys->{user} );
+  $keys->{return} = $keys->{return} || $meta->{mssg}{nodata} . $keys->{user};
+  if ( $opts->{quiet} ) {
+    printf "%s", $keys->{return};
+  } else {
+    printf "\nDelete password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
       $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+  }
 } elsif ( $keys->{acts} eq 'add' ) {
-  $keys->{object} = new Passman;
-  $keys->{appl} = $keys->{appl} || &ask_missing( 'app', $meta->{mssg}{missing} );
-  $keys->{user} = $keys->{user} || &ask_missing( 'user', $meta->{mssg}{missing} );
   $keys->{pass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'password' );
-  $keys->{return} = ( $keys->{object}->setpass( $keys->{appl}, $keys->{user} ) )
-    ? $meta->{mssg}{success} : $meta->{mssg}{failure};
-  printf "%s add this object\nApp: %s\nUser: %s\nPass: %s\n",
+  $keys->{return} = $keys->{object}->addPassword( $keys->{appl}, $keys->{user}, $keys->{pass} );
+  if ( $keys->{return} eq 'same' or $keys->{return} eq 'different' ) {
+    $keys->{pass} = $keys->{object}->getPassword( $keys->{appl}, $keys->{user} );
+    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{exist}, $keys->{user};
+  } elsif ( length $keys->{return} < 1 ) {
+    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+  }
+  if ( $opts->{quiet} ) {
+    printf "%s", $keys->{return};
+  } else {
+    printf "\nAdd new password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
       $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+  }
 } elsif ( $keys->{acts} eq 'mod' ) {
-  $keys->{object} = new Passman;
-  $keys->{appl} = $keys->{appl} || &ask_missing( 'app', $meta->{mssg}{missing} );
-  $keys->{user} = $keys->{user} || &ask_missing( 'user', $meta->{mssg}{missing} );
-  $keys->{pass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'password' );
-  $keys->{return} = ( $keys->{object}->resetpass( $keys->{appl}, $keys->{user} ) )
-    ? $meta->{mssg}{success} : $meta->{mssg}{failure};
-  printf "%s mod this object\nApp: %s\nUser: %s\nPass: %s\n",
-      $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+  $keys->{oldpass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'current password' );
+  $keys->{newpass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'new password' );
+  $keys->{return} = $keys->{object}->modPassword( $keys->{appl}, $keys->{user},
+    $keys->{oldpass}, $keys->{newpass} );
+  if ( $keys->{return eq 'different'} ) {
+    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{differ}, $keys->{user};
+  } elsif ( $keys->{return eq 'none'} or length $keys->{return} < 1 ) {
+    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nopass}, $keys->{user};
+    $keys->{addnow} = &ask_missing( 'pass', $meta->{mssg}{addnow} );
+    if ( $keys->{addnow} =~ /^y/i ) {
+      $keys->{pass} = &ask_missing( 'pass', $meta->{mssg}{newdata} . 'password' );
+      $keys->{return} = $keys->{object}->addPassword( $keys->{appl}, $keys->{user}, $keys->{pass} );
+      if ( $keys->{return} eq 'same' or $keys->{return} eq 'different' ) {
+        $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{exist}, $keys->{user};
+      } elsif ( length $keys->{return} < 1 ) {
+        $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+      }
+      if ( $opts->{quiet} ) {
+        printf "%s", $keys->{return};
+      } else {
+        printf "\nAdd new password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
+          $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+      }
+    } else {
+      $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+      if ( $opts->{quiet} ) {
+        printf "%s", $keys->{return};
+      } else {
+        printf "\nModify password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
+          $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+      }
+    }
+  }
+} else { ## assuming 'get' action
+  $keys->{pass} = $keys->{object}->getPassword( $keys->{appl}, $keys->{user} );
+  $keys->{pass} =
+    ( $keys->{pass} and length $keys->{pass} > 1 and $keys->{pass} !~ /^HASH/ )
+    ? $keys->{pass}
+    : sprintf "%s%s", $meta->{mssg}{nodata}, $keys->{user};
+  if ( $opts->{quiet} ) {
+    printf "%s", $keys->{pass};
+  } else {
+    printf "\nRead password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
+      $keys->{pass}, $keys->{appl}, $keys->{user}, $keys->{pass};
+  }
 }
 
 
@@ -147,7 +202,7 @@ if ( $keys->{acts} eq 'get' ) {
 sub ask_missing {
     my ( $object, $phrase ) = @_;
     $object = $object || 'app';
-    $phrase = $phrase || $object . $meta->{mssg}{missing};
+    $phrase = $phrase || $meta->{mssg}{newdata} . $object;
     ReadMode('noecho') if ( $object eq 'pass' );
     my $accept = '';
     while ( not $accept ) {
@@ -156,7 +211,7 @@ sub ask_missing {
       $accept = $accept || '';
     }
     ReadMode(0);
-    exit 0 if ( $accept and $accept =~ /exit|quit/i );
+    exit 0 if ( $accept and $accept =~ /q|e|b|bye|exit|quit/i );
     return $accept;
 }
 
@@ -170,9 +225,15 @@ sub ask_missing {
 #   printf "App: %s\nUser: %s\nPass: %\n", $keys->{apps}, $keys->{user}, $keys->{pass};
 # }
 
+sub set_quiet {
+  $opts->{quiet} = 1;
+  $opts->{verbose} = 0;
+  $opts->{debug} = 0;
+}
+
 sub usage {
 
-    @_ and print STDERR "\n @_\n";
+  print STDERR "\n@_\n" if ( @_ );
 
     print STDERR <<EOT;
 
@@ -181,19 +242,20 @@ Usage: $meta->{run}
     [--debug] || [--version] || [--help]
 
 Options:
-  --debug               display debug messages to screen
-  --version             display version of script and exit
-  --help | -h           display this help screen
-  --usage | -u          display this help screen
-  --app | -a APP        (required) application to use
-  --user | -u USER      (required) user to use
-  --pass | -p PASS      (required for add/mod) password to use
-  --action | -c ACTION  (optional) action to use
-  --file | -f FILE      (optional) data file to use
+  --help|usage  | -h           display this help screen
+  --version     | -v           display version of script and exit
+  --quiet       | -q           display less output to screen
+  --verbose     | -b           display more output to screen
+  --debug       | -d           display debug messages to screen
+  --app         | -a APP       (required) application to use
+  --user        | -u USER      (required) user to use
+  --pass        | -p PASS      (required for add/mod) password to use
+  --action      | -c ACTION    (optional) action to use
+  --file        | -f FILE      (optional) data file to use
 
 Notes:
   - user will be prompted for any missing values required
-  - valid ACTION (does): add, mod, del, get (default)
+  - valid ACTION: add, mod, del, get (default)
   - FILE must be fully qualified path and filename
   - FILE will default to file set in Passman.pm
   - PASS is required for add and mod actions
