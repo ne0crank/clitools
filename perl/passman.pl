@@ -82,7 +82,13 @@ $meta = {
     exist => 'Password already exists for ',
     differ => 'Password differs for ',
     nopass => 'No password found for ',
-    addnow => 'do you want to add it now? (y|n) '
+    addnow => 'do you want to add it now? (y|n) ',
+    newold => 'Is this the new or old password? (n|o) '
+  },
+  good => {
+    bool => [ 'y', 'n', 1, 0, 'yes', 'no' ],
+    nope => [ 'n', 'o', 'new', 'old' ],
+    quit => [ 'q', 'e', 'b', 'bye', 'exit', 'quit' ]
   }
 };
 
@@ -118,8 +124,8 @@ $keys->{acts} = ( $keys->{acts} and any { lc $keys->{acts} } @{ $meta->{acts} } 
   ? lc $keys->{acts} : $meta->{acts}[0];
 
 $keys->{object} = Passman->new();
-$keys->{appl} = $keys->{appl} || &ask_missing( 'app', $meta->{mssg}{newdata} );
-$keys->{user} = $keys->{user} || &ask_missing( 'user', $meta->{mssg}{newdata} );
+$keys->{appl} = $keys->{appl} || &askMissing( 'app', $meta->{mssg}{newdata} );
+$keys->{user} = $keys->{user} || &askMissing( 'user', $meta->{mssg}{newdata} );
 $keys->{pass} = $keys->{pass} || undef;
 $keys->{file} = ( $keys->{file} and -e $keys->{file} ) ? $keys->{file} : undef;
 
@@ -127,21 +133,21 @@ dump $keys, $meta, $opts if ( $opts->{debug} );
 
 if ( $keys->{acts} eq 'del' ) {
   $keys->{return} = $keys->{object}->delPassword( $keys->{appl}, $keys->{user} );
-  $keys->{return} = $keys->{return} || $meta->{mssg}{nodata} . $keys->{user};
   if ( $opts->{quiet} ) {
     printf "%s", $keys->{return};
   } else {
-    printf "\nDelete password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
-      $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
+    printf "\nDelete password - result: %s\nApp: %s\nUser: %s\n",
+      $keys->{return}, $keys->{appl}, $keys->{user};
   }
 } elsif ( $keys->{acts} eq 'add' ) {
-  $keys->{pass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'password' );
+  $keys->{pass} = $keys->{pass} || &askMissing( 'pass', $meta->{mssg}{newdata} . 'password' );
   $keys->{return} = $keys->{object}->addPassword( $keys->{appl}, $keys->{user}, $keys->{pass} );
-  if ( $keys->{return} eq 'same' or $keys->{return} eq 'different' ) {
-    $keys->{pass} = $keys->{object}->getPassword( $keys->{appl}, $keys->{user} );
-    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{exist}, $keys->{user};
-  } elsif ( length $keys->{return} < 1 ) {
-    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+  if ( $keys->{return} ) {
+    $keys->{return} = ( length $keys->{return} < 2 )
+      ? sprintf "%s%s and matches", $meta->{mssg}{exist}, $keys->{user}
+      : $keys->{return};
+  } else {
+    $keys->{return} = sprintf "%s%s and does not match", $meta->{mssg}{exist}, $keys->{user};
   }
   if ( $opts->{quiet} ) {
     printf "%s", $keys->{return};
@@ -150,35 +156,45 @@ if ( $keys->{acts} eq 'del' ) {
       $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
   }
 } elsif ( $keys->{acts} eq 'mod' ) {
-  $keys->{oldpass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'current password' );
-  $keys->{newpass} = $keys->{pass} || &ask_missing( 'pass', $meta->{mssg}{newdata} . 'new password' );
+  if ( $keys->{pass} ) {
+    $keys->{newold} = &askAny( 'pass', $meta->{mssg}{newold}, $meta->{good}{nope}  );
+    if ( $keys->{newold} =~ /^o/i ) {
+      $keys->{oldpass} = $keys->{pass};
+      $keys->{newpass} = &AskMissing( 'pass', $meta->{mssg}{newdata} . 'new password' );
+    } elsif ( $keys->{newold} =~ /^n/i ) {
+      $keys->{newpass} = $keys->{pass};
+      $keys->{oldpass} = &askMissing( 'pass', $meta->{mssg}{newdata} . 'current password' );
+    }
+  }
+  $keys->{oldpass} = $keys->{oldpass} || &askMissing( 'pass', $meta->{mssg}{newdata} . 'current password' );
+  $keys->{newpass} = $keys->{newpass} || &askMissing( 'pass', $meta->{mssg}{newdata} . 'new password' );
   $keys->{return} = $keys->{object}->modPassword( $keys->{appl}, $keys->{user},
     $keys->{oldpass}, $keys->{newpass} );
-  if ( $keys->{return eq 'different'} ) {
-    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{differ}, $keys->{user};
-  } elsif ( $keys->{return eq 'none'} or length $keys->{return} < 1 ) {
-    $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nopass}, $keys->{user};
-    $keys->{addnow} = &ask_missing( 'pass', $meta->{mssg}{addnow} );
+  if ( $keys->{return} eq 'different' ) {
+    $keys->{return} = sprintf "%s%s", $meta->{mssg}{differ}, $keys->{user};
+  } elsif ( $keys->{return} eq 'none' or length $keys->{return} < 1 ) {
+    $keys->{return} = sprintf "%s%s", $meta->{mssg}{nopass}, $keys->{user};
+    $keys->{addnow} = &askAny( 'pass', $meta->{mssg}{addnow}, $meta->{good}{bool} );
     if ( $keys->{addnow} =~ /^y/i ) {
-      $keys->{pass} = &ask_missing( 'pass', $meta->{mssg}{newdata} . 'password' );
+      $keys->{pass} = &askMissing( 'pass', $meta->{mssg}{newdata} . 'password' );
       $keys->{return} = $keys->{object}->addPassword( $keys->{appl}, $keys->{user}, $keys->{pass} );
-      if ( $keys->{return} eq 'same' or $keys->{return} eq 'different' ) {
-        $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{exist}, $keys->{user};
-      } elsif ( length $keys->{return} < 1 ) {
-        $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+      if ( $keys->{return} ) {
+        $keys->{return} = sprintf "%s%s", $meta->{mssg}{exist}, $keys->{user};
+      } else {
+        $keys->{return} = sprintf "%s%s", $meta->{mssg}{nodata}, $keys->{user};
       }
       if ( $opts->{quiet} ) {
         printf "%s", $keys->{return};
       } else {
-        printf "\nAdd new password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
+        printf "\nAdd new password - result: \n%s\nApp: %s\nUser: %s\nPass: %s\n",
           $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
       }
     } else {
-      $keys->{return} = sprintf "%s%s\n", $meta->{mssg}{nodata}, $keys->{user};
+      $keys->{return} = sprintf "%s%s", $meta->{mssg}{nodata}, $keys->{user};
       if ( $opts->{quiet} ) {
         printf "%s", $keys->{return};
       } else {
-        printf "\nModify password - result: %s\nApp: %s\nUser: %s\nPass: %s\n",
+        printf "\nModify password - result: \n%s\nApp: %s\nUser: %s\nPass: %s\n",
           $keys->{return}, $keys->{appl}, $keys->{user}, $keys->{pass};
       }
     }
@@ -199,31 +215,36 @@ if ( $keys->{acts} eq 'del' ) {
 
 
 
-sub ask_missing {
-    my ( $object, $phrase ) = @_;
-    $object = $object || 'app';
+sub askAny {
+    my ( $object, $phrase, $accept ) = @_;
+    $object = $object || 'pass';
     $phrase = $phrase || $meta->{mssg}{newdata} . $object;
-    ReadMode('noecho') if ( $object eq 'pass' );
-    my $accept = '';
-    while ( not $accept ) {
+    my $response = '';
+    while ( not any { lc $response } @{ $accept } ) {
       print $phrase . ": ";
-      chomp( $accept = <STDIN> );
-      $accept = $accept || '';
+      chomp( $response = <STDIN> );
+      $response = $response || '';
+      exit 0 if ( $response and any { lc $response } @{ $meta->{good}{quit} } );
     }
     ReadMode(0);
-    exit 0 if ( $accept and $accept =~ /q|e|b|bye|exit|quit/i );
-    return $accept;
+    return $response;
 }
 
-# $keys->{object} = new Passman;
-# $keys->{public} = $keys->{object}->getpass( $keys->{app}, 'public' );
-# $keys->{private} = $keys->{object}->getpass( $keys->{app}, 'private' );
-
-# sub get_data {
-#   $keys->{object} = new Passman;
-#   $keys->{pass} = $keys->{object}->getpass( $keys->{apps}, $keys->{user} );
-#   printf "App: %s\nUser: %s\nPass: %\n", $keys->{apps}, $keys->{user}, $keys->{pass};
-# }
+sub askMissing {
+    my ( $object, $phrase ) = @_;
+    $object = $object || 'pass';
+    $phrase = $phrase || $meta->{mssg}{newdata} . $object;
+    ReadMode('noecho') if ( $object eq 'pass' );
+    my $response = '5';
+    while ( $response ne '' ) {
+      print $phrase . ": ";
+      chomp( $response = <STDIN> );
+      $response = $response || '5';
+      exit 0 if ( $response and any { lc $response } @{ $meta->{good}{quit} } );
+    }
+    ReadMode(0);
+    return $response;
+}
 
 sub set_quiet {
   $opts->{quiet} = 1;
