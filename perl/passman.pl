@@ -25,7 +25,7 @@ kent.schaeffer@five9.com
 =head1 MAINTENANCE
 
 Kent Schaeffer
-kent.schaeffer@five9.com
+ne0crank@icloud.com
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -116,7 +116,7 @@ GetOptions(
 &usage( $meta->{mssg}{help} ) if ( $opts->{help} );
 
 if ( $opts->{version} ) {
-  print $meta->{runs} . ' version ' . $VERSION . "\n";
+  print $meta->{run} . ' version ' . $VERSION . "\n";
   exit 0;
 }
 
@@ -246,7 +246,7 @@ sub askMissing {
     return $response;
 }
 
-sub set_quiet {
+sub setQuiet {
   $opts->{quiet} = 1;
   $opts->{verbose} = 0;
   $opts->{debug} = 0;
@@ -256,7 +256,7 @@ sub usage {
 
   print STDERR "\n@_\n" if ( @_ );
 
-    print STDERR <<EOT;
+  print STDERR <<EOT;
 
 Usage: $meta->{run}
     --apps APP --user USER --pass|-a PASS [--action|-a ACTION] [--file FILE]
