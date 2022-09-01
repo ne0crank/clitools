@@ -66,18 +66,12 @@ our $VERSION = '0.03';
 our $DEBUG   = 0;
 
 my $passman_file = '/opt/five9/scripts/f9pcr/modules/F9PCR/Config/.passman';
-<<<<<<< Updated upstream
 my $cryptkey     = 'humptydumptysatonawallagreatfall';
 my $cipher       = Crypt::CBC->new(
 	-cipher => 'Rijndael',
 	-key    => $cryptkey,
 	-pbkdf  => 'pbkdf2',
 );
-
-=======
-my $cryptkey     = 'humptydumptysatonawallandhadagreatfallandthequeendidnothelpatall';
-my $ivector      = '0123456789123456';
->>>>>>> Stashed changes
 
 sub new {
 	my ( $class ) = shift;
@@ -141,13 +135,13 @@ sub _getApplication {
 	return $all_apps->{ $appl };
 }
 
-<<<<<<< Updated upstream
 sub _getUser {
 	my ( $self, $appl, $user ) = @_;
 	dump 'Passman.pm _getUser', $self, $appl, $user if ( $DEBUG );
 	my $valid_app = $self->_getApplication( $appl, $user );
 	return $valid_app->{ $user };
-=======
+}
+
 sub decrypt {
 	my ( $self, $s ) = @_;
 
@@ -160,7 +154,6 @@ sub decrypt {
 		-keysize     => 64
 	);
 	return $cipher->decrypt( MIME::Base64::decode_base64($s) );
->>>>>>> Stashed changes
 }
 
 sub getPassword {
