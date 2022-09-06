@@ -69,7 +69,7 @@ our $VERSION = '0.01';
 
 $path = &abs_path($0);
 $meta = {
-  logs => '/var/log/f9pcr/smtp_sender.log',
+  logs => '/var/log/f9pcr/passman.log',
   debug => 0,
   help => 0,
   version => 0,
