@@ -49,7 +49,7 @@ use File::Basename qw( dirname );
 
 Getopt::Long::Configure( "bundling" );
 
-use Data::Dump qw( dump );
+# use Data::Dump qw( dump );
 
 ## local variables
 
@@ -69,7 +69,9 @@ my $dirObj = ( io( $opts->{path} )->is_dir )
   ? io( $opts->{path} )
   : io->updir;
 
-my $allDirs = [ sprintf $dirObj->All_Dirs ];
-my $allFiles = [ sprintf $dirObj->All_Files ];
-
-dump $allDirs, scalar $allDirs, $allFiles, scalar $allFiles;
+my $allDirs = sprintf $dirObj->All_Dirs;
+my $allFiles = sprintf $dirObj->All_Files;
+# dump $allDirs, $allFiles;
+print "dirParser Output\n================\n";
+print "Parsed Folder:\t" . $dirObj . "\n";
+print "Folders:\t" . $allDirs . "\nFiles\t\t" . $allFiles . "\n";
