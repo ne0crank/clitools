@@ -10,7 +10,7 @@ Passman - Perl extension for passman library
   my $pass_obj = new Passman(optional_password_file);
   my $pass_app = 'some_application';
   my $svc_user = 'some_service_account';
-  my $svc_pass = $pass_obj->getPass( $pass_app, $svc_user );
+  my $svc_pass = $pass_obj->getPassword( $pass_app, $svc_user );
 
 =head1 DESCRIPTION
 
@@ -40,11 +40,11 @@ Patrick Piper
 =head1 MAINTENANCE
 
 Kent Schaeffer
-kent.schaeffer@five9.com
+ne0crank@icloud.com
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2013 by Patrick Piper
+Copyright (C) 2022 Kent Schaeffer
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.34.0 or,
@@ -61,11 +61,12 @@ use JSON::XS qw( encode_json decode_json );
 use MIME::Base64 qw( encode_base64 decode_base64 );
 use Crypt::CBC;
 use Data::Dump qw( dump );
-
-our $VERSION = '0.03';
+use Cwd qw( abs_path );
+use File::Basename qw( dirname basename );
+our $VERSION = '0.04';
 our $DEBUG   = 0;
 
-my $passman_file = '/opt/five9/scripts/f9pcr/modules/F9PCR/Config/.passman';
+my $passman_file = '/.passman';
 my $cryptkey     = 'humptydumptysatonawallagreatfall';
 my $cipher       = Crypt::CBC->new(
 	-cipher => 'Rijndael',
