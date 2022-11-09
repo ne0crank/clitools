@@ -25,7 +25,7 @@ kent.schaeffer@five9.com
 =head1 MAINTENANCE
 
 Kent Schaeffer
-kent.schaeffer@five9.com
+ne0crank@icloud.com
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -42,7 +42,8 @@ at your option, any later version of Perl 5 you may have available.
 use strict;
 use warnings;
 use Getopt::Long;
-Getopt::Long::Configure( "bundling", "ignorecase_always" );
+
+Getopt::Long::Configure( "bundling" );
 
 use Data::Dump qw( dump );
 use Cwd qw( abs_path );
@@ -68,6 +69,10 @@ our $VERSION = '0.01';
 
 $path = &abs_path($0);
 $meta = {
+  logs => '/var/log/f9pcr/passman.log',
+  debug => 0,
+  help => 0,
+  version => 0,
   acts => [ 'get', 'add', 'mod', 'del' ],
   full => $path,
   dir => &dirname($path),
@@ -89,15 +94,20 @@ $meta = {
     bool => [ 'y', 'n', 1, 0, 'yes', 'no' ],
     nope => [ 'n', 'o', 'new', 'old' ],
     quit => [ 'q', 'e', 'b', 'bye', 'exit', 'quit' ]
+    missing => ' is missing - please enter now',
+    nodata => 'No data found for ',
+    newdata => 'Please enter new ',
+    success => 'Successful attempt to ',
+    failure => 'Failed attempt to '
   }
 };
 
-$opts = {};
+
 GetOptions(
   $opts,
   'version|v'     => \$opts->{version},
   'help|usage|h'  => \$opts->{help},
-  'quiet|q'       => \&set_quiet,
+  'quiet|q'       => \&setQuiet,
   'verbose|b'     => \$opts->{verbose},
   'debug|d'       => \$opts->{debug},   ## show debug output
   'app|a=s'       => \$keys->{appl},
@@ -116,7 +126,7 @@ GetOptions(
 &usage( $meta->{mssg}{help} ) if ( $opts->{help} );
 
 if ( $opts->{version} ) {
-  print $meta->{runs} . ' version ' . $VERSION . "\n";
+  print $meta->{run} . ' version ' . $VERSION . "\n";
   exit 0;
 }
 
@@ -246,17 +256,18 @@ sub askMissing {
     return $response;
 }
 
-sub set_quiet {
+sub setQuiet {
   $opts->{quiet} = 1;
   $opts->{verbose} = 0;
   $opts->{debug} = 0;
-}
+);
+
 
 sub usage {
 
   print STDERR "\n@_\n" if ( @_ );
 
-    print STDERR <<EOT;
+  print STDERR <<EOT;
 
 Usage: $meta->{run}
     --apps APP --user USER --pass|-a PASS [--action|-a ACTION] [--file FILE]

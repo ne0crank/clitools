@@ -73,7 +73,6 @@ my $cipher       = Crypt::CBC->new(
 	-pbkdf  => 'pbkdf2',
 );
 
-
 sub new {
 	my ( $class ) = shift;
 	my $self = {
@@ -141,6 +140,20 @@ sub _getUser {
 	dump 'Passman.pm _getUser', $self, $appl, $user if ( $DEBUG );
 	my $valid_app = $self->_getApplication( $appl, $user );
 	return $valid_app->{ $user };
+}
+
+sub decrypt {
+	my ( $self, $s ) = @_;
+
+	my $cipher = Crypt::CBC->new(
+		-key         => $cryptkey,
+		-cipher      => 'Cipher::AES',
+		-iv          => $ivector,
+		-literal_key => 1,
+		-header      => "none",
+		-keysize     => 64
+	);
+	return $cipher->decrypt( MIME::Base64::decode_base64($s) );
 }
 
 sub getPassword {
