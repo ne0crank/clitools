@@ -15,8 +15,8 @@ Passman - Perl extension for passman library
 =head1 DESCRIPTION
 
 Passman is a core library for storing credentials in an encrypted format
-for use in perl scripts. This module handles encryption and deencryption of the
-credentials.
+for use in perl scripts. This module handles encryption and deencryption 
+of the credentials.
 
 =head2 EXPORT
 
@@ -35,7 +35,8 @@ If you have a web site set up for your module, mention it here.
 
 =head1 AUTHOR
 
-Patrick Piper
+Kent Schaeffer
+ne0crank@icloud.com
 
 =head1 MAINTENANCE
 
@@ -63,7 +64,7 @@ use Crypt::CBC;
 use Data::Dump qw( dump );
 use Cwd qw( abs_path );
 use File::Basename qw( dirname basename );
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 our $DEBUG   = 0;
 
 my $passman_file = '/.passman';
@@ -113,7 +114,7 @@ sub _encrypt {
 }
 
 sub _decrypt {
-  my ( $self, $crypted ) = @_;
+  my ( $self, $crypted ) = @_
 	$self->{_cryptkey} = $self->{_cryptkey} || $cryptkey;
   $self->{_cipher} = $cipher || Crypt::CBC->new(
 		-cipher => 'Rijndael',
@@ -165,10 +166,10 @@ sub getPassword {
 
 sub addPassword {
 	my ( $self, $appl, $user, $pass ) = @_;
-  my $exist_user = $self->_getUser( $appl, $user );
+    my $exist_user = $self->_getUser( $appl, $user );
 	dump 'Passman.pm add password1', $appl, $user, $pass, $exist_user, $self if ( $DEBUG );
-  return $self->_validate( $pass, $exist_user->{pass} ) if ( $exist_user );
-  my $data = $self->_readAll();
+    return $self->_validate( $pass, $exist_user->{pass} ) if ( $exist_user );
+    my $data = $self->_readAll();
 	my $encrypt = $self->_encrypt( $pass );
 	$data->{ $appl }{ $user }{pass} = $encrypt;
 	dump 'Passman.pm add password2', $data, $self if ( $DEBUG );
