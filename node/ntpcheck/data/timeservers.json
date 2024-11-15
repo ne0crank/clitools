@@ -1,0 +1,132 @@
+[
+  {
+    "server": "time.google.com",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "time.apple.com",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "time.cloudflare.com",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "time.euro.apple.com",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "time-a-wwv.nist.gov",
+    "stratum": 2,
+    "region": "amer"
+  },
+  {
+    "server": "time.nist.gov",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "utcnist.colorado.edu",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "vniiftri.khv.ru",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "ntp.time.in.ua",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "ntp2.stratum2.ru",
+    "stratum": 2,
+    "region": "emea"
+  },
+  {
+    "server": "ntp1.net.berkeley.edu",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "ntp2.net.berkeley.edu",
+    "stratum": 2,
+    "region": "amer"
+  },
+  {
+    "server": "tick.usask.ca",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "tock.usask.ca",
+    "stratum": 2,
+    "region": "amer"
+  },
+  {
+    "server": "ntp.ripe.net",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "clock.isc.org",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "ntp1.jst.mfeed.ad.jp",
+    "stratum": 1,
+    "region": "apac"
+  },
+  {
+    "server": "ntp2.jst.mfeed.ad.jp",
+    "stratum": 1,
+    "region": "apac"
+  },
+  {
+    "server": "ntp3.jst.mfeed.ad.jp",
+    "stratum": 2,
+    "region": "apac"
+  },
+  {
+    "server": "pool.ntp.org",
+    "stratum": 1,
+    "region": "amer"
+  },
+  {
+    "server": "europe.pool.ntp.org",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "asia.pool.ntp.org",
+    "stratum": 1,
+    "region": "apac"
+  },
+  {
+    "server": "ru.pool.ntp.org",
+    "stratum": 2,
+    "region": "emea"
+  },
+  {
+    "server": "time.fu-berlin.de",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "ntps1-0.cs.tu-berlin.de",
+    "stratum": 1,
+    "region": "emea"
+  },
+  {
+    "server": "ntps1-1.cs.tu-berlin.de",
+    "stratum": 2,
+    "region": "emea"
+  }
+]
